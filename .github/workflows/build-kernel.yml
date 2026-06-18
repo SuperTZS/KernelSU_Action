@@ -203,9 +203,15 @@ jobs:
       if: env.ENABLE_KERNELSU == 'true'
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
-        curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s ${{ env.KERNELSU_TAG }}
-        KSU_VERSION=$(cd KernelSU && expr $(/usr/bin/git rev-list --count HEAD) + 10200)
-        echo "UPLOADNAME=-KernelSU_$KSU_VERSION" >> $GITHUB_ENV
+        
+        # 1. 正常执行 Next 的脚本，在当前目录下生成标准的 KernelSU-Next 目录
+        curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s legacy
+        
+        # 2. 建立软链接，既不破坏 Next 内部的路径硬编码，又能让原版 YML 的后续步骤顺着找到代码
+        ln -sf KernelSU-Next KernelSU
+        
+        # 3. 伪造版本号变量，彻底绕过原版 YML 的 git rev-list 报错
+        echo "UPLOADNAME=-KernelSU-Next_33133" >> $GITHUB_ENV
 
     - name: Setup Configuration for Kernel
       run: |
