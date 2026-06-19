@@ -261,6 +261,11 @@ jobs:
           export KSU_EXPECTED_HASH=${{ env.KSU_EXPECTED_HASH }}
         fi
         make -j$(nproc --all) CC=clang O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }} ${{ env.KERNEL_CONFIG }}
+        # Merge Xiaomi dipper-specific config fragment (CONFIG_MACH_XIAOMI_SDM845 / CONFIG_MACH_XIAOMI_E1N etc.)
+        # vendor/sdm845_defconfig alone does NOT contain these, so dipper-specific dtbs won't be selected
+        # without this step (Makefile falls back to building unrelated QRD/CDP/QVR reference-board dtbs).
+        ./scripts/kconfig/merge_config.sh -O out -m out/.config arch/${{ env.ARCH }}/configs/vendor/xiaomi/dipper.config
+        make -j$(nproc --all) CC=clang O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }} olddefconfig
         if [ ${{ env.ENABLE_CCACHE }} = true ]; then
             make -j$(nproc --all) CC="ccache clang" O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }}
         else
