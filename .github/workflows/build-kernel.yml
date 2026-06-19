@@ -260,7 +260,13 @@ jobs:
           export KSU_EXPECTED_SIZE=${{ env.KSU_EXPECTED_SIZE }}
           export KSU_EXPECTED_HASH=${{ env.KSU_EXPECTED_HASH }}
         fi
-        make -j$(nproc --all) CC=clang O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }} ${{ env.KERNEL_CONFIG }}
+        
+        # 1. 创建输出目录
+        mkdir -p out
+
+        # 2. 合并配置：固定以 mi845_defconfig 为 Base，以用户在外填入的 env.KERNEL_CONFIG（即 dipper.config）为 Fragment 进行缝合
+        ./scripts/kconfig/merge_config.sh -O out -m out/.config arch/${{ env.ARCH }}/configs/vendor/xiaomi/mi845_defconfig arch/${{ env.ARCH }}/configs/vendor/xiaomi/${{ env.KERNEL_CONFIG }}
+
         # mi845_defconfig ships CONFIG_CC_WERROR=y, which silently overrides the
         # CONFIG_CC_WERROR=n appended earlier when DISABLE_CC_WERROR is true, turning
         # newer clang -W warnings (e.g. -Wstrlcpy-strlcat-size) back into hard errors.
