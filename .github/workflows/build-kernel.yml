@@ -261,13 +261,6 @@ jobs:
           export KSU_EXPECTED_HASH=${{ env.KSU_EXPECTED_HASH }}
         fi
         make -j$(nproc --all) CC=clang O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }} ${{ env.KERNEL_CONFIG }}
-        # Merge Xiaomi mi845-specific config (CONFIG_EFI=n, etc.) and dipper-specific config
-        # fragment (CONFIG_MACH_XIAOMI_SDM845 / CONFIG_MACH_XIAOMI_E1N etc.).
-        # vendor/sdm845_defconfig alone does NOT contain these, so dipper-specific dtbs won't be
-        # selected (Makefile falls back to building unrelated QRD/CDP/QVR reference-board dtbs),
-        # and CONFIG_EFI_STUB stays on, which breaks the vmlinux link with:
-        #   undefined reference to `__efistub_strrchr'
-        ./scripts/kconfig/merge_config.sh -O out -m out/.config arch/${{ env.ARCH }}/configs/vendor/xiaomi/mi845_defconfig arch/${{ env.ARCH }}/configs/vendor/xiaomi/dipper.config
         # mi845_defconfig ships CONFIG_CC_WERROR=y, which silently overrides the
         # CONFIG_CC_WERROR=n appended earlier when DISABLE_CC_WERROR is true, turning
         # newer clang -W warnings (e.g. -Wstrlcpy-strlcat-size) back into hard errors.
