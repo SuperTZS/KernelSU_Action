@@ -268,6 +268,13 @@ jobs:
         # and CONFIG_EFI_STUB stays on, which breaks the vmlinux link with:
         #   undefined reference to `__efistub_strrchr'
         ./scripts/kconfig/merge_config.sh -O out -m out/.config arch/${{ env.ARCH }}/configs/vendor/xiaomi/mi845_defconfig arch/${{ env.ARCH }}/configs/vendor/xiaomi/dipper.config
+        # mi845_defconfig ships CONFIG_CC_WERROR=y, which silently overrides the
+        # CONFIG_CC_WERROR=n appended earlier when DISABLE_CC_WERROR is true, turning
+        # newer clang -W warnings (e.g. -Wstrlcpy-strlcat-size) back into hard errors.
+        # Re-apply the user's choice after the merge so it always wins.
+        if [ ${{ env.DISABLE_CC_WERROR }} = true ]; then
+            sed -i 's/CONFIG_CC_WERROR=y/CONFIG_CC_WERROR=n/' out/.config
+        fi
         make -j$(nproc --all) CC=clang O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }} olddefconfig
         if [ ${{ env.ENABLE_CCACHE }} = true ]; then
             make -j$(nproc --all) CC="ccache clang" O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }}
