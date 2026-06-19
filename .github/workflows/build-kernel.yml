@@ -256,8 +256,8 @@ jobs:
         cd drivers/kernelsu || cd KernelSU
         echo "当前最新的 Commit 信息："
         git log -n 1 --pretty=format:"%h - %s"
-        echo "检查是否包含 4 月 15 日的关键修复 commit (6fd8dfc):"
-        git branch --contains 6fd8dfc
+        echo "检查是否包含 4 月 15 日的关键修复 commit (205fa8e):"
+        git branch --contains 205fa8e
 
     - name: Build kernel
       run: |
