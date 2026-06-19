@@ -212,6 +212,17 @@ jobs:
         # 3. 伪造版本号变量，彻底绕过原版 YML 的 git rev-list 报错
         echo "UPLOADNAME=-ReSukiSU_dipper" >> $GITHUB_ENV
 
+        cd KernelSU
+        
+        # 检查特定的 commit ID：205fa8e4b609c2f14058089d4c06adce1b4817d7
+        # -q 表示静默模式，只通过返回码判断
+        if git rev-list --quiet 205fa8e4b609c2f14058089d4c06adce1b4817d7; then
+            echo "✅ 补丁 205fa8e (Fix filp_open) 已存在于当前代码库中"
+        else
+            echo "❌ 补丁 205fa8e 缺失，请检查 setup.sh 的分支配置！"
+            exit 1
+        fi
+
     - name: Setup Configuration for Kernel
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
@@ -249,15 +260,6 @@ jobs:
       with:
         key: build-kernel-${{ env.DEVICE }}${{ env.LOCALVERSION }}${{ env.UPLOADNAME }}
         max-size: 2G
-
-    - name: Verify KernelSU Commit Status
-      run: |
-        # 进入 KernelSU 所在目录（假设名为 KernelSU）
-        cd drivers/kernelsu || cd KernelSU
-        echo "当前最新的 Commit 信息："
-        git log -n 1 --pretty=format:"%h - %s"
-        echo "检查是否包含 4 月 15 日的关键修复 commit (205fa8e):"
-        git branch --contains 205fa8e
 
     - name: Build kernel
       run: |
