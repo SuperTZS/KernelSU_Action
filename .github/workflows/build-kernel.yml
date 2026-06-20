@@ -184,13 +184,24 @@ jobs:
     - name: Download kernel source
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace
-        git clone --recursive ${{ env.KERNEL_SOURCE }} -b ${{ env.KERNEL_SOURCE_BRANCH }} android-kernel --depth=1
+        if [ -n "${{ env.KERNEL_SOURCE_COMMIT }}" ]; then
+          # Pinning to a specific commit (not necessarily branch HEAD) requires full history,
+          # so --depth=1 cannot be used here. e.g. Coconutat's repo HEAD has KSU_DEBUG=y enabled
+          # on top of 57072a6; pin past that until upstream flips it back off for release builds.
+          git clone --recursive ${{ env.KERNEL_SOURCE }} -b ${{ env.KERNEL_SOURCE_BRANCH }} android-kernel
+          cd android-kernel
+          git checkout ${{ env.KERNEL_SOURCE_COMMIT }}
+          git submodule update --init --recursive
+          cd ..
+        else
+          git clone --recursive ${{ env.KERNEL_SOURCE }} -b ${{ env.KERNEL_SOURCE_BRANCH }} android-kernel --depth=1
+        fi
         if [[ ${{ env.ADD_LOCALVERSION_TO_FILENAME }} == 'true' ]]; then
           echo "LOCALVERSION=$(cat android-kernel/localversion)" >> $GITHUB_ENV
         else
           echo "LOCALVERSION=" >> $GITHUB_ENV
         fi
-
+    
     - name: Download source boot image
       if: env.BUILD_BOOT_IMG == 'true'
       run: |
@@ -277,7 +288,7 @@ jobs:
         # etc.); without it, dipper-specific dtbs aren't selected (Makefile falls back to
         # unrelated QRD/CDP/QVR reference boards) and CONFIG_EFI_STUB stays on, which breaks the
         # vmlinux link with: undefined reference to `__efistub_strrchr'
-        make -j$(nproc --all) CC=clang O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }} vendor/xiaomi/mi845_defconfig vendor/xiaomi/${{ env.KERNEL_CONFIG }}
+        make -j$(nproc --all) CC=clang O=out ARCH=${{ env.ARCH }} ${{ env.CUSTOM_CMDS }} ${{ env.EXTRA_CMDS }} ${{ env.GCC_64 }} ${{ env.GCC_32 }} vendor/xiaomi/mi845_defconfig vendor/xiaomi/extra.config vendor/xiaomi/${{ env.KERNEL_CONFIG }}
         # mi845_defconfig ships CONFIG_CC_WERROR=y, which would otherwise turn newer clang -W
         # warnings (e.g. -Wstrlcpy-strlcat-size) into hard errors. Re-apply the user's choice
         # from config.env after the merge so it always wins.
